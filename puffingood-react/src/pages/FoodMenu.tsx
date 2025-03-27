@@ -170,7 +170,6 @@ const FoodMenu = () => {
                 height="200"
                 image={item.image}
                 alt={item.name}
-                sx={{ objectFit: 'contain', p: 1 }}
               />
               <CardContent sx={{ flexGrow: 1 }}>
                 <Typography gutterBottom variant="h5" component="h2">
