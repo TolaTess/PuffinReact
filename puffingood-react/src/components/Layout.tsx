@@ -33,6 +33,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { logout } from '../store/slices/authSlice';
 
+// Import images
+import logoImg from '../assets/logo/logo_black.png';
+
 const Layout = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -73,9 +76,13 @@ const Layout = () => {
 
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
-      <Typography variant="h6" sx={{ my: 2 }}>
-        PuffinGood
-      </Typography>
+      <Box sx={{ my: 2, display: 'flex', justifyContent: 'center' }}>
+        <img 
+          src={logoImg} 
+          alt="PuffinGood Logo" 
+          style={{ height: '40px' }} 
+        />
+      </Box>
       <Divider />
       <List>
         <ListItem button component={RouterLink} to="/">
@@ -149,23 +156,21 @@ const Layout = () => {
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography
-              variant="h6"
-              noWrap
+            <Box
               component={RouterLink}
               to="/"
               sx={{
                 mr: 2,
                 display: { xs: 'none', md: 'flex' },
-                fontFamily: 'monospace',
-                fontWeight: 700,
-                letterSpacing: '.3rem',
-                color: 'inherit',
                 textDecoration: 'none',
               }}
             >
-              PuffinGood
-            </Typography>
+              <img 
+                src={logoImg} 
+                alt="PuffinGood Logo" 
+                style={{ height: '40px' }} 
+              />
+            </Box>
 
             <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
               <Button

@@ -11,27 +11,38 @@ import {
   CardActions,
 } from '@mui/material';
 
+// Import images
+import classicImg from '../assets/puff/classic.png';
+import premiumImg from '../assets/puff/premium.png';
+import halfHalfImg from '../assets/puff/half-half.png';
+
 const featuredItems = [
   {
     id: '1',
-    name: 'Classic Burger',
-    description: 'Juicy beef patty with fresh lettuce, tomatoes, and special sauce',
-    price: 12.99,
-    image: 'https://source.unsplash.com/random/400x300/?burger',
+    name: 'Classic Box',
+    description: 'Traditional box of Nigerian puff puff with two toppings',
+    price: 6.00,
+    image: classicImg,
+    category: 'Puff Puff',  
+    addOns: ['Chocolate', 'Strawberry'],
   },
   {
     id: '2',
-    name: 'Margherita Pizza',
-    description: 'Fresh tomatoes, mozzarella, and basil on a thin crust',
-    price: 14.99,
-    image: 'https://source.unsplash.com/random/400x300/?pizza',
+    name: 'Premium Box',
+    description: 'Traditional box of Nigerian puff puff with three toppings',
+    price: 10.00,
+    image: premiumImg,
+    category: 'Puff Puff',
+    addOns: ['Chocolate', 'Strawberry', 'Vanilla'],
   },
   {
     id: '3',
-    name: 'Caesar Salad',
-    description: 'Crisp romaine lettuce, croutons, and parmesan cheese',
-    price: 9.99,
-    image: 'https://source.unsplash.com/random/400x300/?salad',
+    name: 'Half - Half Box',
+    description: 'Traditional box of Nigerian puff puff with four toppings',
+    price: 12.00,
+    image: halfHalfImg,
+    category: 'Puff Puff',
+    addOns: ['Chocolate', 'Strawberry', 'Vanilla', 'Lemon'],
   },
 ];
 

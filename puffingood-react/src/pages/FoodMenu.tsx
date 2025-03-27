@@ -13,10 +13,17 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Chip,
+  Stack,
 } from '@mui/material';
 import { Search as SearchIcon, Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { addItem } from '../store/slices/cartSlice';
+
+// Import images
+import classicImg from '../assets/puff/classic.png';
+import premiumImg from '../assets/puff/premium.png';
+import halfHalfImg from '../assets/puff/half-half.png';
 
 interface FoodItem {
   id: string;
@@ -25,41 +32,37 @@ interface FoodItem {
   price: number;
   image: string;
   category: string;
+  addOns: string[];
 }
 
 // Temporary mock data - replace with API call
 const mockFoodItems: FoodItem[] = [
   {
     id: '1',
-    name: 'Classic Burger',
-    description: 'Juicy beef patty with fresh lettuce, tomatoes, and special sauce',
-    price: 12.99,
-    image: 'https://source.unsplash.com/random/400x300/?burger',
-    category: 'Burgers',
+    name: 'Classic Box',
+    description: 'Traditional box of Nigerian puff puff with two toppings',
+    price: 6.00,
+    image: classicImg,
+    category: 'Puff Puff',  
+    addOns: ['Chocolate', 'Strawberry'],
   },
   {
     id: '2',
-    name: 'Chicken Sandwich',
-    description: 'Crispy chicken with lettuce and mayo',
-    price: 10.99,
-    image: 'https://source.unsplash.com/random/400x300/?sandwich',
-    category: 'Sandwiches',
+    name: 'Premium Box',
+    description: 'Traditional box of Nigerian puff puff with three toppings',
+    price: 10.00,
+    image: premiumImg,
+    category: 'Puff Puff',
+    addOns: ['Chocolate', 'Strawberry', 'Vanilla'],
   },
   {
     id: '3',
-    name: 'Caesar Salad',
-    description: 'Fresh romaine lettuce, croutons, and parmesan cheese',
-    price: 8.99,
-    image: 'https://source.unsplash.com/random/400x300/?salad',
-    category: 'Salads',
-  },
-  {
-    id: '4',
-    name: 'French Fries',
-    description: 'Crispy golden fries with sea salt',
-    price: 4.99,
-    image: 'https://source.unsplash.com/random/400x300/?fries',
-    category: 'Sides',
+    name: 'Half - Half Box',
+    description: 'Traditional box of Nigerian puff puff with four toppings',
+    price: 12.00,
+    image: halfHalfImg,
+    category: 'Puff Puff',
+    addOns: ['Chocolate', 'Strawberry', 'Vanilla', 'Lemon'],
   },
 ];
 
@@ -69,6 +72,7 @@ const FoodMenu = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [selectedAddOns, setSelectedAddOns] = useState<{ [key: string]: string[] }>({});
 
   const categories = ['all', ...new Set(mockFoodItems.map(item => item.category))];
 
@@ -77,6 +81,7 @@ const FoodMenu = () => {
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
+    
   });
 
   const handleQuantityChange = (itemId: string, change: number) => {
@@ -101,7 +106,20 @@ const FoodMenu = () => {
         message: `${quantity} ${item.name}(s) added to cart`,
       });
       setQuantities(prev => ({ ...prev, [item.id]: 0 }));
+      setSelectedAddOns(prev => ({ ...prev, [item.id]: [] }));
     }
+  };
+
+  const toggleAddOn = (itemId: string, addOn: string) => {
+    setSelectedAddOns(prev => {
+      const current = prev[itemId] || [];
+      return {
+        ...prev,
+        [itemId]: current.includes(addOn)
+          ? current.filter(a => a !== addOn)
+          : [...current, addOn]
+      };
+    });
   };
 
   return (
@@ -152,6 +170,7 @@ const FoodMenu = () => {
                 height="200"
                 image={item.image}
                 alt={item.name}
+                sx={{ objectFit: 'contain', p: 1 }}
               />
               <CardContent sx={{ flexGrow: 1 }}>
                 <Typography gutterBottom variant="h5" component="h2">
@@ -163,6 +182,27 @@ const FoodMenu = () => {
                 <Typography variant="h6" color="primary" gutterBottom>
                   ${item.price.toFixed(2)}
                 </Typography>
+                
+                {item.addOns.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Available Toppings:
+                    </Typography>
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {item.addOns.map((addOn) => (
+                        <Chip
+                          key={addOn}
+                          label={addOn}
+                          size="small"
+                          color={selectedAddOns[item.id]?.includes(addOn) ? "primary" : "default"}
+                          onClick={() => toggleAddOn(item.id, addOn)}
+                          sx={{ mb: 1 }}
+                        />
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <IconButton
                     size="small"
