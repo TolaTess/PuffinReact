@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
@@ -15,10 +15,13 @@ import {
   Alert,
   Chip,
   Stack,
+  CircularProgress,
 } from '@mui/material';
 import { Search as SearchIcon, Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { addItem } from '../store/slices/cartSlice';
+import { useFoods } from '../hooks/useFirestore';
+import { Food } from '../types';
 
 // Import images
 import classicImg from '../assets/puff/classic.png';
@@ -35,53 +38,22 @@ interface FoodItem {
   addOns: string[];
 }
 
-// Temporary mock data - replace with API call
-const mockFoodItems: FoodItem[] = [
-  {
-    id: '1',
-    name: 'Classic Box',
-    description: 'Traditional box of Nigerian puff puff with two toppings',
-    price: 6.00,
-    image: classicImg,
-    category: 'Puff Puff',  
-    addOns: ['Chocolate', 'Strawberry'],
-  },
-  {
-    id: '2',
-    name: 'Premium Box',
-    description: 'Traditional box of Nigerian puff puff with three toppings',
-    price: 10.00,
-    image: premiumImg,
-    category: 'Puff Puff',
-    addOns: ['Chocolate', 'Strawberry', 'Vanilla'],
-  },
-  {
-    id: '3',
-    name: 'Half - Half Box',
-    description: 'Traditional box of Nigerian puff puff with four toppings',
-    price: 12.00,
-    image: halfHalfImg,
-    category: 'Puff Puff',
-    addOns: ['Chocolate', 'Strawberry', 'Vanilla', 'Lemon'],
-  },
-];
-
 const FoodMenu = () => {
   const dispatch = useDispatch();
+  const { foods, loading, error } = useFoods();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [snackbar, setSnackbar] = useState({ open: false, message: '' });
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
   const [selectedAddOns, setSelectedAddOns] = useState<{ [key: string]: string[] }>({});
 
-  const categories = ['all', ...new Set(mockFoodItems.map(item => item.category))];
+  const categories = ['all', ...new Set(foods.map(item => item.category))];
 
-  const filteredItems = mockFoodItems.filter(item => {
+  const filteredItems = foods.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
-    
   });
 
   const handleQuantityChange = (itemId: string, change: number) => {
@@ -91,22 +63,23 @@ const FoodMenu = () => {
     }));
   };
 
-  const handleAddToCart = (item: FoodItem) => {
-    const quantity = quantities[item.id] || 1;
+  const handleAddToCart = (item: Food) => {
+    const quantity = quantities[item.id!] || 1;
     if (quantity > 0) {
       dispatch(addItem({
-        id: item.id,
+        id: item.id!,
         name: item.name,
         price: item.price,
         quantity,
-        image: item.image,
+        image: item.imagePath,
+        addons: selectedAddOns[item.id!] || [],
       }));
       setSnackbar({
         open: true,
         message: `${quantity} ${item.name}(s) added to cart`,
       });
-      setQuantities(prev => ({ ...prev, [item.id]: 0 }));
-      setSelectedAddOns(prev => ({ ...prev, [item.id]: [] }));
+      setQuantities(prev => ({ ...prev, [item.id!]: 0 }));
+      setSelectedAddOns(prev => ({ ...prev, [item.id!]: [] }));
     }
   };
 
@@ -121,6 +94,24 @@ const FoodMenu = () => {
       };
     });
   };
+
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          Error loading menu: {error}
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="lg">
@@ -168,7 +159,7 @@ const FoodMenu = () => {
               <CardMedia
                 component="img"
                 height="200"
-                image={item.image}
+                image={item.imagePath == 'classic' ? classicImg : item.imagePath == 'premium' ? premiumImg : halfHalfImg}
                 alt={item.name}
               />
               <CardContent sx={{ flexGrow: 1 }}>
@@ -182,19 +173,19 @@ const FoodMenu = () => {
                   ${item.price.toFixed(2)}
                 </Typography>
                 
-                {item.addOns.length > 0 && (
+                {item.addons && item.addons.length > 0 && (
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle2" gutterBottom>
                       Available Toppings:
                     </Typography>
                     <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      {item.addOns.map((addOn) => (
+                      {item.addons.map((addon) => (
                         <Chip
-                          key={addOn}
-                          label={addOn}
+                          key={addon.name}
+                          label={`${addon.name} ($${addon.price.toFixed(2)})`}
                           size="small"
-                          color={selectedAddOns[item.id]?.includes(addOn) ? "primary" : "default"}
-                          onClick={() => toggleAddOn(item.id, addOn)}
+                          color={selectedAddOns[item.id!]?.includes(addon.name) ? "primary" : "default"}
+                          onClick={() => toggleAddOn(item.id!, addon.name)}
                           sx={{ mb: 1 }}
                         />
                       ))}
@@ -205,14 +196,14 @@ const FoodMenu = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                   <IconButton
                     size="small"
-                    onClick={() => handleQuantityChange(item.id, -1)}
+                    onClick={() => handleQuantityChange(item.id!, -1)}
                   >
                     <RemoveIcon />
                   </IconButton>
-                  <Typography>{quantities[item.id] || 0}</Typography>
+                  <Typography>{quantities[item.id!] || 0}</Typography>
                   <IconButton
                     size="small"
-                    onClick={() => handleQuantityChange(item.id, 1)}
+                    onClick={() => handleQuantityChange(item.id!, 1)}
                   >
                     <AddIcon />
                   </IconButton>
@@ -222,7 +213,7 @@ const FoodMenu = () => {
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={() => handleAddToCart(item)}
-                  disabled={!quantities[item.id]}
+                  disabled={!quantities[item.id!]}
                 >
                   Add to Cart
                 </Button>
