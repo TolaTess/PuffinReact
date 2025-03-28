@@ -13,6 +13,8 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { loginStart, loginSuccess, loginFailure } from '../store/slices/authSlice';
+import { signInWithEmail, signInWithGoogle } from '../config/firebase';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -35,22 +37,19 @@ const Login = () => {
     dispatch(loginStart());
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const user = await signInWithEmail(formData.email, formData.password);
+      dispatch(loginSuccess(user));
+      navigate('/');
+    } catch (err) {
+      dispatch(loginFailure(err instanceof Error ? err.message : 'Login failed'));
+    }
+  };
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
-
-      dispatch(loginSuccess(data.user));
+  const handleGoogleSignIn = async () => {
+    dispatch(loginStart());
+    try {
+      const user = await signInWithGoogle();
+      dispatch(loginSuccess(user));
       navigate('/');
     } catch (err) {
       dispatch(loginFailure(err instanceof Error ? err.message : 'Login failed'));
@@ -119,6 +118,18 @@ const Login = () => {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<GoogleIcon />}
+              onClick={handleGoogleSignIn}
+              sx={{ mb: 2 }}
+              disabled={loading}
+            >
+              Sign in with Google
+            </Button>
+
             <Box sx={{ textAlign: 'center' }}>
               <Link component={RouterLink} to="/register" variant="body2">
                 {"Don't have an account? Sign Up"}
