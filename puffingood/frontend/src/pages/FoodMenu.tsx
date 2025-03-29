@@ -24,9 +24,9 @@ import { useFoods } from '../hooks/useFirestore';
 import { Food } from '../types';
 
 // Import images
-import classicImg from '../assets/puff/classic.png';
-import premiumImg from '../assets/puff/premium.png';
-import halfHalfImg from '../assets/puff/half-half.png';
+import classicImg from '../assets/puff/classic.jpg';
+import premiumImg from '../assets/puff/premium.jpg';
+import halfHalfImg from '../assets/puff/half-half.jpg';
 
 
 const FoodMenu = () => {
