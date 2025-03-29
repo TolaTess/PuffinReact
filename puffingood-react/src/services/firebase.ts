@@ -352,6 +352,19 @@ class FirebaseService {
       throw new Error(`Failed to get users: ${error}`);
     }
   }
+
+  async updateOrderTrackingNumber(orderId: string, trackingNumber: string) {
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        trackingNumber: trackingNumber,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating order tracking number:', error);
+      throw error;
+    }
+  }
 }
 
 export const firebaseService = new FirebaseService(); 

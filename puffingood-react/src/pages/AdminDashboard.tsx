@@ -73,6 +73,7 @@ const AdminDashboard = () => {
     price: '',
     isAvailable: true
   });
+  const [trackingNumbers, setTrackingNumbers] = useState<Record<string, string>>({});
 
   // Filter orders based on date range
   const filteredOrders = useMemo(() => {
@@ -192,9 +193,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleTrackingNumberChange = (orderId: string, value: string) => {
+    setTrackingNumbers(prev => ({
+      ...prev,
+      [orderId]: value
+    }));
+  };
+
+  const handleSaveTrackingNumber = async (orderId: string) => {
+    try {
+      if (trackingNumbers[orderId]) {
+        await firebaseService.updateOrderTrackingNumber(orderId, trackingNumbers[orderId]);
+        setError(''); // Clear any previous errors
+      }
+    } catch (err) {
+      setError('Failed to save tracking number. Please try again.');
+    }
+  };
+
   const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
-      await firebaseService.updateOrderStatus(orderId, newStatus);
+      if (newStatus === 'cancelled') {
+        // Just update status for cancelled orders
+        await firebaseService.updateOrderStatus(orderId, newStatus);
+      } else {
+        // For other status changes, include tracking number if it exists
+        await firebaseService.updateOrderStatus(orderId, newStatus);
+        if (trackingNumbers[orderId]) {
+          await firebaseService.updateOrderTrackingNumber(orderId, trackingNumbers[orderId]);
+        }
+      }
     } catch (err) {
       setError('Failed to update order status. Please try again.');
     }
@@ -341,6 +369,7 @@ const AdminDashboard = () => {
                     <TableCell>Items</TableCell>
                     <TableCell>Total</TableCell>
                     <TableCell>Status</TableCell>
+                    <TableCell>Tracking</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -375,6 +404,28 @@ const AdminDashboard = () => {
                         />
                       </TableCell>
                       <TableCell>
+                        {order.status !== 'cancelled' && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1 }}>
+                            <TextField
+                              size="small"
+                              label="Tracking Number"
+                              value={trackingNumbers[order.id!] || ''}
+                              onChange={(e) => handleTrackingNumberChange(order.id!, e.target.value)}
+                              placeholder="Enter tracking number (optional)"
+                              helperText="Enter tracking number"
+                            />
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              onClick={() => handleSaveTrackingNumber(order.id!)}
+                              disabled={!trackingNumbers[order.id!]}
+                            >
+                              Save Tracking Number
+                            </Button>
+                          </Box>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Button
                           size="small"
                           onClick={() => handleUpdateOrderStatus(order.id!, 'processing')}
@@ -386,7 +437,7 @@ const AdminDashboard = () => {
                         <Button
                           size="small"
                           onClick={() => handleUpdateOrderStatus(order.id!, 'completed')}
-                          disabled={order.status !== 'processing'}
+                          disabled={order.status === 'completed' || order.status === 'cancelled'}
                           sx={{ mr: 1 }}
                         >
                           Mark Complete
