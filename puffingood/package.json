@@ -1,12 +1,14 @@
 {
   "name": "puffingood",
   "version": "1.0.0",
-  "description": "PuffinGood Food Delivery Platform",
+  "description": "PuffingGood Food Delivery Platform",
   "scripts": {
     "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
     "start:frontend": "cd frontend && npm run dev",
     "start:backend": "cd backend && node server.js",
-    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -40,7 +40,9 @@ const router = createBrowserRouter([
       { index: true, element: <AdminDashboard /> },
     ],
   },
-]);
+], {
+  basename: import.meta.env.DEV ? '/' : '/puffingood'
+});
 
 function App() {
   return (
