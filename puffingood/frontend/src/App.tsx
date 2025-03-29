@@ -41,7 +41,7 @@ const router = createBrowserRouter([
     ],
   },
 ], {
-  basename: import.meta.env.DEV ? '/' : '/puffingood'
+  basename: import.meta.env.DEV ? '/' : '/PuffinReact'
 });
 
 function App() {
