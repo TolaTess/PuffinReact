@@ -57,14 +57,18 @@ const FoodMenu = () => {
   const handleAddToCart = (item: Food) => {
     const quantity = quantities[item.id!] || 1;
     if (quantity > 0) {
+      const selectedAddons = selectedAddOns[item.id!] || [];
+      const addons = item.addons.filter(addon => selectedAddons.includes(addon.name));
+      
       dispatch(addItem({
         id: item.id!,
         name: item.name,
         price: item.price,
         quantity,
         image: item.imagePath,
-        addons: selectedAddOns[item.id!] || [],
+        addons,
       }));
+      
       setSnackbar({
         open: true,
         message: `${quantity} ${item.name}(s) added to cart`,

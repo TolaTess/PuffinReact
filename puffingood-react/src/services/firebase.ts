@@ -11,7 +11,8 @@ import {
   orderBy,
   serverTimestamp,
   onSnapshot,
-  DocumentData
+  DocumentData,
+  setDoc
 } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { Food, Order, AdminSettings, User } from '../types';
@@ -173,11 +174,65 @@ class FirebaseService {
   }
 
   // User Methods
-  async getUserProfile(userId: string) {
+  async createUserProfile(userId: string, email: string) {
     try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          id: userId,
+          email,
+          name: '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          isAdmin: false,
+          isMarketing: false,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+    } catch (error) {
+      console.error('Error creating user profile:', error);
+      throw new Error(`Failed to create user profile: ${error}`);
+    }
+  }
+
+  async getUserProfile(userId: string | undefined) {
+    try {
+      if (!userId) {
+        console.warn('getUserProfile called with undefined userId');
+        return null;
+      }
+
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      
       if (userDoc.exists()) {
         return userDoc.data() as User;
+      }
+
+      // If user document doesn't exist, create it
+      const user = auth.currentUser;
+      if (user) {
+        await this.createUserProfile(userId, user.email!);
+        return {
+          id: userId,
+          email: user.email!,
+          name: '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          isAdmin: false,
+          isMarketing: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User;
       }
       return null;
     } catch (error) {

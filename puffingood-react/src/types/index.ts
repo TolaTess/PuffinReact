@@ -59,6 +59,10 @@ export interface User {
   email: string;
   name: string;
   phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
   isAdmin: boolean;
   isMarketing: boolean;
   createdAt: Date;

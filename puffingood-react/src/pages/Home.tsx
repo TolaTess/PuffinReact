@@ -139,17 +139,7 @@ const Home = () => {
                   image={item.imagePath === 'classic' ? classicImg : item.imagePath === 'premium' ? premiumImg : halfHalfImg}
                   alt={item.name}
                 />
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h5" component="h3">
-                    {item.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" paragraph>
-                    {item.description}
-                  </Typography>
-                  <Typography variant="h6" color="primary">
-                    ${item.price.toFixed(2)}
-                  </Typography>
-                </CardContent>
+              
                 <CardActions>
                   <Button
                     fullWidth

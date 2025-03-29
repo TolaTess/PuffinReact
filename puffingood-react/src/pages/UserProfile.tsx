@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Box,
   Typography,
   TextField,
   Button,
-  Paper,
   Alert,
-  Grid,
-  Avatar,
+  CircularProgress,
 } from '@mui/material';
-import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { firebaseService } from '../services/firebase';
 import { User } from '../types';
 
 const UserProfile = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +31,11 @@ const UserProfile = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       // Load user data from Firestore
       const loadUserData = async () => {
         try {
-          const userData = await firebaseService.getUserProfile(user.uid);
+          const userData = await firebaseService.getUserProfile(user.id);
           if (userData) {
             setFormData({
               name: userData.name || '',
@@ -53,23 +54,16 @@ const UserProfile = () => {
     }
   }, [user]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.id) return;
 
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      await firebaseService.updateUserProfile(user.uid, formData);
+      await firebaseService.updateUserProfile(user.id, formData);
       setSuccess('Profile updated successfully');
     } catch (err) {
       setError('Failed to update profile');
@@ -81,111 +75,103 @@ const UserProfile = () => {
   if (!user) {
     return (
       <Container>
-        <Alert severity="error">Please log in to view your profile</Alert>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          Please log in to view your profile
+        </Alert>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="sm">
       <Box sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-            <Avatar
-              sx={{ width: 100, height: 100, mr: 2 }}
-              alt={user.name || 'User'}
-            />
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                Profile Settings
-              </Typography>
-              <Typography color="textSecondary">
-                {user.email}
-              </Typography>
-            </Box>
-          </Box>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Profile
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          Manage your account information
+        </Typography>
+      </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-          {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              {success}
-            </Alert>
-          )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
+        </Alert>
+      )}
 
-          <form onSubmit={handleSubmit}>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="City"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="State"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="ZIP Code"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  size="large"
-                  disabled={loading}
-                >
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </Grid>
-            </Grid>
-          </form>
-        </Paper>
+      <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+        <TextField
+          fullWidth
+          label="Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="Phone"
+          value={formData.phone}
+          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="Address"
+          value={formData.address}
+          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="City"
+          value={formData.city}
+          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="State"
+          value={formData.state}
+          onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="ZIP Code"
+          value={formData.zipCode}
+          onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
+          margin="normal"
+          required
+        />
+
+        <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            sx={{ minWidth: 120 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Save Changes'}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => navigate('/')}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+        </Box>
       </Box>
     </Container>
   );

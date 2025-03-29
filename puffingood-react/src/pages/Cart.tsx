@@ -16,6 +16,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { removeItem, updateQuantity, clearCart } from '../store/slices/cartSlice';
 
+// Import images
+import classicImg from '../assets/puff/classic.png';
+import premiumImg from '../assets/puff/premium.png';
+import halfHalfImg from '../assets/puff/half-half.png';
+
 const Cart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -81,7 +86,7 @@ const Cart = () => {
                   <Grid item xs={3}>
                     <Box
                       component="img"
-                      src={item.image}
+                      src={item.image === 'classic' ? classicImg : item.image === 'premium' ? premiumImg : halfHalfImg}
                       alt={item.name}
                       sx={{
                         width: '100%',
@@ -99,6 +104,13 @@ const Cart = () => {
                         <Typography variant="body2" color="text.secondary">
                           ${item.price.toFixed(2)}
                         </Typography>
+                        {item.addons && item.addons.length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Add-ons: {item.addons.map(addon => addon.name).join(', ')}
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                       <IconButton
                         size="small"

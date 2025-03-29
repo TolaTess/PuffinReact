@@ -222,8 +222,8 @@ const AdminDashboard = () => {
                     <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
                     <TableCell>{order.userId}</TableCell>
                     <TableCell>
-                      {order.items.map((item) => (
-                        <div key={`${order.id}-${item.foodId}`}>
+                      {order.items.map((item, index) => (
+                        <div key={`${order.id}-${item.foodId || index}`}>
                           {item.quantity}x {item.name}
                           {item.addons && item.addons.length > 0 && (
                             <div style={{ fontSize: '0.8em', color: '#666' }}>

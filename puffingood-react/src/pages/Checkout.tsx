@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Container,
   Typography,
@@ -15,9 +16,10 @@ import {
   StepLabel,
   Alert,
 } from '@mui/material';
-import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { clearCart } from '../store/slices/cartSlice';
+import { firebaseService } from '../services/firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 const steps = ['Delivery Details', 'Review Order', 'Payment'];
 
@@ -36,6 +38,7 @@ const Checkout = () => {
     instructions: '',
   });
   const [error, setError] = useState('');
+  const { user } = useAuth();
 
   const handleDeliveryDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDeliveryDetails({
@@ -68,23 +71,28 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items,
-          deliveryDetails,
-          total: total + 2.99, // Including delivery fee
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to place order');
+      if (!user) {
+        setError('Please sign in to place an order');
+        return;
       }
 
+      const orderData = {
+        userId: user.uid,
+        items: items.map(item => ({
+          foodId: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          addons: item.addons || []  // Include addons from cart item
+        })),
+        total: total + 2.99, // Including delivery fee
+        city: deliveryDetails.city,
+        deliveryFee: 2.99,
+        status: 'pending' as const,
+        createdAt: new Date()
+      };
+
+      await firebaseService.createOrder(orderData);
       dispatch(clearCart());
       navigate('/orders');
     } catch (err) {
@@ -178,6 +186,11 @@ const Checkout = () => {
           <Typography variant="subtitle1">
             {item.name} x {item.quantity}
           </Typography>
+          {item.addons && item.addons.length > 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+              Add-ons: {item.addons.map(addon => addon.name).join(', ')}
+            </Typography>
+          )}
           <Typography variant="body2" color="text.secondary">
             ${(item.price * item.quantity).toFixed(2)}
           </Typography>

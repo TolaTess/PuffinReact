@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { Addon } from '../../types';
 
 interface CartItem {
   id: string;
@@ -6,6 +7,7 @@ interface CartItem {
   price: number;
   quantity: number;
   image: string;
+  addons: Addon[];
 }
 
 interface CartState {

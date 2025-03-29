@@ -13,31 +13,8 @@ import {
 } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-
-interface OrderItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface Order {
-  id: string;
-  items: OrderItem[];
-  total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  deliveryDetails: {
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    phone: string;
-    instructions?: string;
-  };
-  createdAt: string;
-}
+import { firebaseService } from '../services/firebase';
+import { Order } from '../types';
 
 const Orders = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -47,14 +24,12 @@ const Orders = () => {
 
   useEffect(() => {
     const fetchOrders = async () => {
+      if (!user) return;
+
       try {
-        // TODO: Replace with actual API call
-        const response = await fetch('/api/orders');
-        if (!response.ok) {
-          throw new Error('Failed to fetch orders');
-        }
-        const data = await response.json();
-        setOrders(data);
+        setLoading(true);
+        const ordersData = await firebaseService.getUserOrders(user.id);
+        setOrders(ordersData);
       } catch (err) {
         setError('Failed to load orders. Please try again later.');
       } finally {
@@ -62,23 +37,17 @@ const Orders = () => {
       }
     };
 
-    if (user) {
-      fetchOrders();
-    } else {
-      setLoading(false);
-    }
+    fetchOrders();
   }, [user]);
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'pending':
         return 'warning';
-      case 'preparing':
+      case 'processing':
         return 'info';
-      case 'ready':
+      case 'completed':
         return 'success';
-      case 'delivered':
-        return 'primary';
       case 'cancelled':
         return 'error';
       default:
@@ -86,8 +55,8 @@ const Orders = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString();
   };
 
   if (loading) {
@@ -166,7 +135,7 @@ const Orders = () => {
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">
-                    Order #{order.id.slice(-6)}
+                    Order #{order.id?.slice(-6)}
                   </Typography>
                   <Chip
                     label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -182,19 +151,7 @@ const Orders = () => {
                   Items
                 </Typography>
                 {order.items.map((item) => (
-                  <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Box
-                      component="img"
-                      src={item.image}
-                      alt={item.name}
-                      sx={{
-                        width: 60,
-                        height: 60,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                        mr: 2,
-                      }}
-                    />
+                  <Box key={`${order.id}-${item.foodId}`} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Box sx={{ flexGrow: 1 }}>
                       <Typography variant="body1">{item.name}</Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -209,26 +166,20 @@ const Orders = () => {
                 <Divider sx={{ my: 2 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6">Total</Typography>
-                  <Typography variant="h6">${order.total.toFixed(2)}</Typography>
+                  <Typography variant="h6">${(order.total || 0).toFixed(2)}</Typography>
                 </Box>
                 <Typography variant="subtitle1" gutterBottom>
                   Delivery Details
                 </Typography>
                 <Typography variant="body2">
-                  {order.deliveryDetails.name}
+                  {order.city}
                 </Typography>
                 <Typography variant="body2">
-                  {order.deliveryDetails.address}
+                  Delivery Fee: ${order.deliveryFee.toFixed(2)}
                 </Typography>
-                <Typography variant="body2">
-                  {order.deliveryDetails.city}, {order.deliveryDetails.state} {order.deliveryDetails.zipCode}
-                </Typography>
-                <Typography variant="body2">
-                  {order.deliveryDetails.phone}
-                </Typography>
-                {order.deliveryDetails.instructions && (
+                {order.trackingNumber && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    Instructions: {order.deliveryDetails.instructions}
+                    Tracking Number: {order.trackingNumber}
                   </Typography>
                 )}
               </CardContent>
