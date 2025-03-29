@@ -105,13 +105,14 @@ class FirebaseService {
         throw new Error('Order must contain at least one item');
       }
 
-      const docRef = await addDoc(collection(db, 'orders'), {
+      const orderRef = doc(collection(db, 'orders'));
+      await setDoc(orderRef, {
         ...order,
         userId: user.uid,
         createdAt: serverTimestamp(),
         status: 'pending',
       });
-      return docRef.id;
+      return orderRef.id;
     } catch (error) {
       console.error('Error creating order:', error);
       throw new Error(`Failed to create order: ${error}`);
