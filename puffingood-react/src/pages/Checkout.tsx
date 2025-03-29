@@ -192,7 +192,7 @@ const Checkout = () => {
             </Typography>
           )}
           <Typography variant="body2" color="text.secondary">
-            ${(item.price * item.quantity).toFixed(2)}
+          €{(item.price * item.quantity).toFixed(2)}
           </Typography>
         </Box>
       ))}
@@ -203,13 +203,13 @@ const Checkout = () => {
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography>Delivery Fee</Typography>
-        <Typography>$2.99</Typography>
+        <Typography>€2.99</Typography>
       </Box>
       <Divider sx={{ my: 1 }} />
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h6">Total</Typography>
         <Typography variant="h6">
-          ${(total + 2.99).toFixed(2)}
+        €{(total + 2.99).toFixed(2)}
         </Typography>
       </Box>
     </Box>

@@ -85,7 +85,9 @@ const AdminDashboard = () => {
     if (!filteredOrders) return null;
     
     const totalOrders = filteredOrders.length;
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalRevenue = filteredOrders.reduce((sum, order) => 
+      sum + (Number(order.totalAmount) || 0), 0
+    );
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     
     const statusCounts = filteredOrders.reduce((acc, order) => {
@@ -279,7 +281,7 @@ const AdminDashboard = () => {
                         Total Revenue
                       </Typography>
                       <Typography variant="h4">
-                        ${orderSummary.totalRevenue.toFixed(2)}
+                      €{Number(orderSummary.totalRevenue).toFixed(2)}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -291,7 +293,7 @@ const AdminDashboard = () => {
                         Average Order Value
                       </Typography>
                       <Typography variant="h4">
-                        ${orderSummary.averageOrderValue.toFixed(2)}
+                      €{Number(orderSummary.averageOrderValue).toFixed(2)}
                       </Typography>
                     </CardContent>
                   </Card>
@@ -337,7 +339,11 @@ const AdminDashboard = () => {
                   {filteredOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell>{order.id}</TableCell>
-                      <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {order.createdAt?.toDate?.() 
+                          ? order.createdAt.toDate().toLocaleString() 
+                          : 'No date'}
+                      </TableCell>
                       <TableCell>{order.userId}</TableCell>
                       <TableCell>
                         {order.items.map((item, index) => (
@@ -351,7 +357,7 @@ const AdminDashboard = () => {
                           </div>
                         ))}
                       </TableCell>
-                      <TableCell>${(order.total || 0).toFixed(2)}</TableCell>
+                      <TableCell>€{Number(order.totalAmount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         <Chip
                           label={order.status}

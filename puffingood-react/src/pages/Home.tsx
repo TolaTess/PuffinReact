@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import {
   Container,
   Box,
@@ -22,6 +24,7 @@ import halfHalfImg from '../assets/puff/half-half.png';
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state: RootState) => state.auth);
   const { foods, loading, error } = useFoods();
 
   // Get featured items (first 3 items from the menu)
@@ -72,7 +75,7 @@ const Home = () => {
             paragraph
             sx={{ mb: 4 }}
           >
-            Delicious food delivered to your doorstep
+            Delicious puff puffs delivered to your doorstep
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
             <Button
@@ -89,21 +92,23 @@ const Home = () => {
             >
               Order Now
             </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              onClick={() => navigate('/register')}
-              sx={{
-                borderColor: 'white',
-                color: 'white',
-                '&:hover': {
+            {!user && (
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate('/register')}
+                sx={{
                   borderColor: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              Sign Up
-            </Button>
+                  color: 'white',
+                  '&:hover': {
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                Sign Up
+              </Button>
+            )}
           </Box>
         </Container>
       </Box>

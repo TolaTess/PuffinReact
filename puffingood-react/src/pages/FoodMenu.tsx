@@ -115,7 +115,7 @@ const FoodMenu = () => {
           Our Menu
         </Typography>
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={6}>
+          {/* <Grid item xs={12} md={6}>
             <TextField
               fullWidth
               variant="outlined"
@@ -130,8 +130,8 @@ const FoodMenu = () => {
                 ),
               }}
             />
-          </Grid>
-          <Grid item xs={12} md={6}>
+          </Grid> */}
+          {/* <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {categories.map((category) => (
                 <Button
@@ -143,7 +143,7 @@ const FoodMenu = () => {
                 </Button>
               ))}
             </Box>
-          </Grid>
+          </Grid> */}
         </Grid>
       </Box>
 
@@ -165,7 +165,7 @@ const FoodMenu = () => {
                   {item.description}
                 </Typography>
                 <Typography variant="h6" color="primary" gutterBottom>
-                  ${item.price.toFixed(2)}
+                  €{item.price.toFixed(2)}
                 </Typography>
                 
                 {item.addons && item.addons.length > 0 && (
@@ -177,7 +177,7 @@ const FoodMenu = () => {
                       {item.addons.map((addon) => (
                         <Chip
                           key={addon.name}
-                          label={`${addon.name} ($${addon.price.toFixed(2)})`}
+                          label={`${addon.name} (€${addon.price.toFixed(2)})`}
                           size="small"
                           color={selectedAddOns[item.id!]?.includes(addon.name) ? "primary" : "default"}
                           onClick={() => toggleAddOn(item.id!, addon.name)}
