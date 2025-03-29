@@ -30,6 +30,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Switch,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -44,7 +45,7 @@ import { RootState } from '../store';
 import { useFoods, useUserOrders } from '../hooks/useFirestore';
 import { firebaseService } from '../services/firebase';
 import { isAdmin } from '../utils/admin';
-import { Food, Order } from '../types';
+import { Food, Order, Addon } from '../types';
 import UserManagement from '../components/UserManagement';
 
 const AdminDashboard = () => {
@@ -65,6 +66,12 @@ const AdminDashboard = () => {
     price: '',
     category: '',
     imagePath: '',
+    addons: [] as Addon[],
+  });
+  const [newAddon, setNewAddon] = useState({
+    name: '',
+    price: '',
+    isAvailable: true
   });
 
   // Filter orders based on date range
@@ -124,6 +131,7 @@ const AdminDashboard = () => {
         price: item.price.toString(),
         category: item.category,
         imagePath: item.imagePath,
+        addons: item.addons || [],
       });
     } else {
       setEditingItem(null);
@@ -133,6 +141,7 @@ const AdminDashboard = () => {
         price: '',
         category: '',
         imagePath: '',
+        addons: [],
       });
     }
     setOpenDialog(true);
@@ -162,7 +171,7 @@ const AdminDashboard = () => {
           ...formData,
           price: parseFloat(formData.price),
           isAvailable: true,
-          addons: [],
+          addons: formData.addons,
         });
       }
       handleCloseDialog();
@@ -417,7 +426,25 @@ const AdminDashboard = () => {
                     <CardContent>
                       <Typography variant="h6">{item.name}</Typography>
                       <Typography color="textSecondary">{item.description}</Typography>
-                      <Typography variant="h6">${(item.price || 0).toFixed(2)}</Typography>
+                      <Typography variant="h6">€{(item.price || 0).toFixed(2)}</Typography>
+                      
+                      {item.addons && item.addons.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2" gutterBottom>
+                            Add-ons:
+                          </Typography>
+                          {item.addons.map((addon, index) => (
+                            <Typography 
+                              key={index} 
+                              variant="body2" 
+                              color={addon.isAvailable ? 'textPrimary' : 'text.disabled'}
+                            >
+                              {addon.name} - €{addon.price.toFixed(2)}
+                              {!addon.isAvailable && ' (Disabled)'}
+                            </Typography>
+                          ))}
+                        </Box>
+                      )}
                     </CardContent>
                     <Box sx={{ p: 2 }}>
                       <IconButton onClick={() => handleOpenDialog(item)}>
@@ -482,6 +509,85 @@ const AdminDashboard = () => {
               onChange={handleFormChange}
               margin="normal"
             />
+            
+            <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
+              Add-ons
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField
+                label="Add-on Name"
+                value={newAddon.name}
+                onChange={(e) => setNewAddon(prev => ({ ...prev, name: e.target.value }))}
+                size="small"
+              />
+              <TextField
+                label="Price"
+                type="number"
+                value={newAddon.price}
+                onChange={(e) => setNewAddon(prev => ({ ...prev, price: e.target.value }))}
+                size="small"
+              />
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  if (newAddon.name && newAddon.price) {
+                    setFormData(prev => ({
+                      ...prev,
+                      addons: [...prev.addons, {
+                        name: newAddon.name,
+                        price: Number(newAddon.price),
+                        isAvailable: true
+                      }]
+                    }));
+                    setNewAddon({ name: '', price: '', isAvailable: true });
+                  }
+                }}
+              >
+                Add
+              </Button>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              {formData.addons.map((addon, index) => (
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    mb: 1 
+                  }}
+                >
+                  <Typography sx={{ flex: 1 }}>
+                    {addon.name} - €{addon.price.toFixed(2)}
+                  </Typography>
+                  <Switch
+                    checked={addon.isAvailable}
+                    onChange={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        addons: prev.addons.map((a, i) => 
+                          i === index ? { ...a, isAvailable: !a.isAvailable } : a
+                        )
+                      }));
+                    }}
+                  />
+                  <IconButton 
+                    size="small" 
+                    color="error"
+                    onClick={() => {
+                      setFormData(prev => ({
+                        ...prev,
+                        addons: prev.addons.filter((_, i) => i !== index)
+                      }));
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
