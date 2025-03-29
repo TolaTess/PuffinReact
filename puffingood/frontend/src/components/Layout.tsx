@@ -34,7 +34,7 @@ import { RootState } from '../store';
 import { logout } from '../store/slices/authSlice';
 
 // Import images
-import logoImg from '../assets/logo/logo_black.png';
+import logoImg from '../assets/logo/logo_black2.png';
 
 const Layout = () => {
   const theme = useTheme();
