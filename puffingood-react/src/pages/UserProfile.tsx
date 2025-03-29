@@ -1,46 +1,55 @@
 import { useState, useEffect } from 'react';
 import {
   Container,
-  Typography,
   Box,
-  Card,
-  CardContent,
-  Grid,
+  Typography,
   TextField,
   Button,
+  Paper,
   Alert,
+  Grid,
   Avatar,
-  Divider,
 } from '@mui/material';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { firebaseService } from '../services/firebase';
+import { User } from '../types';
 
 const UserProfile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '',
     address: '',
     city: '',
     state: '',
     zipCode: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        phone: '',
-        address: '',
-        city: '',
-        state: '',
-        zipCode: '',
-      });
+      // Load user data from Firestore
+      const loadUserData = async () => {
+        try {
+          const userData = await firebaseService.getUserProfile(user.uid);
+          if (userData) {
+            setFormData({
+              name: userData.name || '',
+              phone: userData.phone || '',
+              address: userData.address || '',
+              city: userData.city || '',
+              state: userData.state || '',
+              zipCode: userData.zipCode || '',
+            });
+          }
+        } catch (err) {
+          setError('Failed to load user data');
+        }
+      };
+      loadUserData();
     }
   }, [user]);
 
@@ -53,27 +62,17 @@ const UserProfile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+
     setLoading(true);
-    setError('');
-    setSuccess('');
+    setError(null);
+    setSuccess(null);
 
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update profile');
-      }
-
+      await firebaseService.updateUserProfile(user.uid, formData);
       setSuccess('Profile updated successfully');
     } catch (err) {
-      setError('Failed to update profile. Please try again.');
+      setError('Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -81,53 +80,30 @@ const UserProfile = () => {
 
   if (!user) {
     return (
-      <Container maxWidth="md">
-        <Box
-          sx={{
-            mt: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h5" gutterBottom>
-            Please sign in to view your profile
-          </Typography>
-        </Box>
+      <Container>
+        <Alert severity="error">Please log in to view your profile</Alert>
       </Container>
     );
   }
 
   return (
     <Container maxWidth="md">
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mt: 4 }}>
-        Profile
-      </Typography>
-
-      <Card>
-        <CardContent>
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
             <Avatar
-              sx={{
-                width: 100,
-                height: 100,
-                mr: 3,
-                bgcolor: 'primary.main',
-              }}
-            >
-              {user.name.charAt(0).toUpperCase()}
-            </Avatar>
+              sx={{ width: 100, height: 100, mr: 2 }}
+              alt={user.name || 'User'}
+            />
             <Box>
-              <Typography variant="h5" gutterBottom>
-                {user.name}
+              <Typography variant="h4" gutterBottom>
+                Profile Settings
               </Typography>
-              <Typography variant="body1" color="text.secondary">
+              <Typography color="textSecondary">
                 {user.email}
               </Typography>
             </Box>
           </Box>
-
-          <Divider sx={{ my: 3 }} />
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -141,13 +117,12 @@ const UserProfile = () => {
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid item xs={12}>
                 <TextField
-                  required
                   fullWidth
-                  label="Full Name"
+                  label="Name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
@@ -155,20 +130,8 @@ const UserProfile = () => {
               </Grid>
               <Grid item xs={12}>
                 <TextField
-                  required
                   fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Phone Number"
+                  label="Phone"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
@@ -192,7 +155,7 @@ const UserProfile = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={3}>
                 <TextField
                   fullWidth
                   label="State"
@@ -201,7 +164,7 @@ const UserProfile = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12} sm={3}>
                 <TextField
                   fullWidth
                   label="ZIP Code"
@@ -221,9 +184,9 @@ const UserProfile = () => {
                 </Button>
               </Grid>
             </Grid>
-          </Box>
-        </CardContent>
-      </Card>
+          </form>
+        </Paper>
+      </Box>
     </Container>
   );
 };

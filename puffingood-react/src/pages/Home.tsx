@@ -9,45 +9,41 @@ import {
   CardContent,
   CardMedia,
   CardActions,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
+import { useFoods } from '../hooks/useFirestore';
+import { Food } from '../types';
 
 // Import images
 import classicImg from '../assets/puff/classic.png';
 import premiumImg from '../assets/puff/premium.png';
 import halfHalfImg from '../assets/puff/half-half.png';
 
-const featuredItems = [
-  {
-    id: '1',
-    name: 'Classic Box',
-    description: 'Traditional box of Nigerian puff puff with two toppings',
-    price: 6.00,
-    image: classicImg,
-    category: 'Puff Puff',  
-    addOns: ['Chocolate', 'Strawberry'],
-  },
-  {
-    id: '2',
-    name: 'Premium Box',
-    description: 'Traditional box of Nigerian puff puff with three toppings',
-    price: 10.00,
-    image: premiumImg,
-    category: 'Puff Puff',
-    addOns: ['Chocolate', 'Strawberry', 'Vanilla'],
-  },
-  {
-    id: '3',
-    name: 'Half - Half Box',
-    description: 'Traditional box of Nigerian puff puff with four toppings',
-    price: 12.00,
-    image: halfHalfImg,
-    category: 'Puff Puff',
-    addOns: ['Chocolate', 'Strawberry', 'Vanilla', 'Lemon'],
-  },
-];
-
 const Home = () => {
   const navigate = useNavigate();
+  const { foods, loading, error } = useFoods();
+
+  // Get featured items (first 3 items from the menu)
+  const featuredItems = foods.slice(0, 3);
+
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          Error loading featured items: {error}
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Box>
@@ -121,7 +117,7 @@ const Home = () => {
           gutterBottom
           sx={{ mb: 4 }}
         >
-          Featured Items
+          Main Menu
         </Typography>
         <Grid container spacing={4}>
           {featuredItems.map((item) => (
@@ -140,7 +136,7 @@ const Home = () => {
                 <CardMedia
                   component="img"
                   height="200"
-                  image={item.image}
+                  image={item.imagePath === 'classic' ? classicImg : item.imagePath === 'premium' ? premiumImg : halfHalfImg}
                   alt={item.name}
                 />
                 <CardContent sx={{ flexGrow: 1 }}>

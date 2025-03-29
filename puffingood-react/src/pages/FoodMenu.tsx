@@ -28,15 +28,6 @@ import classicImg from '../assets/puff/classic.png';
 import premiumImg from '../assets/puff/premium.png';
 import halfHalfImg from '../assets/puff/half-half.png';
 
-interface FoodItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  addOns: string[];
-}
 
 const FoodMenu = () => {
   const dispatch = useDispatch();

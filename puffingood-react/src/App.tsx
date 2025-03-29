@@ -12,7 +12,6 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import AdminDashboard from './pages/AdminDashboard';
-import AdminLogin from './pages/AdminLogin';
 import UserProfile from './pages/UserProfile';
 import TermsAndConditions from './pages/TermsAndConditions';
 
@@ -35,7 +34,6 @@ function App() {
               <Route path="terms" element={<TermsAndConditions />} />
             </Route>
             <Route path="/admin">
-              <Route path="login" element={<AdminLogin />} />
               <Route path="dashboard" element={<AdminDashboard />} />
             </Route>
           </Routes>

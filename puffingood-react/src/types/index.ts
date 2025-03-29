@@ -35,9 +35,10 @@ export interface Order {
 
 export interface OrderItem {
   foodId: string;
+  name: string;
   quantity: number;
-  addons: Addon[];
   price: number;
+  addons?: Addon[];
 }
 
 // Admin Settings Types
@@ -56,6 +57,10 @@ export interface AdminSettings {
 export interface User {
   id: string;
   email: string;
+  name: string;
+  phone: string;
   isAdmin: boolean;
   isMarketing: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 } 

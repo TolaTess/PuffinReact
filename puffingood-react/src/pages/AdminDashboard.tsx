@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -32,100 +33,48 @@ import {
   Add as AddIcon,
   Check as CheckIcon,
   Close as CloseIcon,
+  ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-
-interface OrderItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface Order {
-  id: string;
-  items: OrderItem[];
-  total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
-  deliveryDetails: {
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    phone: string;
-    instructions?: string;
-  };
-  createdAt: string;
-}
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-}
+import { useFoods, useUserOrders } from '../hooks/useFirestore';
+import { firebaseService } from '../services/firebase';
+import { isAdmin } from '../utils/admin';
+import { Food, Order } from '../types';
+import UserManagement from '../components/UserManagement';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { foods, loading: foodsLoading, error: foodsError } = useFoods();
+  const { orders, loading: ordersLoading, error: ordersError } = useUserOrders(true);
+  
   const [activeTab, setActiveTab] = useState(0);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingItem, setEditingItem] = useState<Food | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     category: '',
-    image: '',
+    imagePath: '',
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // TODO: Replace with actual API calls
-        const [ordersResponse, menuResponse] = await Promise.all([
-          fetch('/api/orders'),
-          fetch('/api/menu'),
-        ]);
-
-        if (!ordersResponse.ok || !menuResponse.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const [ordersData, menuData] = await Promise.all([
-          ordersResponse.json(),
-          menuResponse.json(),
-        ]);
-
-        setOrders(ordersData);
-        setMenuItems(menuData);
-      } catch (err) {
-        setError('Failed to load data. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user?.role === 'admin') {
-      fetchData();
-    } else {
-      setLoading(false);
+    if (!user || !isAdmin(user)) {
+      navigate('/');
+      return;
     }
-  }, [user]);
+    setLoading(false);
+  }, [user, navigate]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
-  const handleOpenDialog = (item?: MenuItem) => {
+  const handleOpenDialog = (item?: Food) => {
     if (item) {
       setEditingItem(item);
       setFormData({
@@ -133,7 +82,7 @@ const AdminDashboard = () => {
         description: item.description,
         price: item.price.toString(),
         category: item.category,
-        image: item.image,
+        imagePath: item.imagePath,
       });
     } else {
       setEditingItem(null);
@@ -142,7 +91,7 @@ const AdminDashboard = () => {
         description: '',
         price: '',
         category: '',
-        image: '',
+        imagePath: '',
       });
     }
     setOpenDialog(true);
@@ -162,32 +111,19 @@ const AdminDashboard = () => {
 
   const handleSubmit = async () => {
     try {
-      const url = editingItem
-        ? `/api/menu/${editingItem.id}`
-        : '/api/menu';
-      const method = editingItem ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      if (editingItem) {
+        await firebaseService.updateFood(editingItem.id!, {
           ...formData,
           price: parseFloat(formData.price),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save menu item');
+        });
+      } else {
+        await firebaseService.addFood({
+          ...formData,
+          price: parseFloat(formData.price),
+          isAvailable: true,
+          addons: [],
+        });
       }
-
-      const updatedItem = await response.json();
-      setMenuItems(prev =>
-        editingItem
-          ? prev.map(item => (item.id === editingItem.id ? updatedItem : item))
-          : [...prev, updatedItem]
-      );
       handleCloseDialog();
     } catch (err) {
       setError('Failed to save menu item. Please try again.');
@@ -200,15 +136,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch(`/api/menu/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete menu item');
-      }
-
-      setMenuItems(prev => prev.filter(item => item.id !== id));
+      await firebaseService.deleteFood(id);
     } catch (err) {
       setError('Failed to delete menu item. Please try again.');
     }
@@ -216,22 +144,7 @@ const AdminDashboard = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update order status');
-      }
-
-      const updatedOrder = await response.json();
-      setOrders(prev =>
-        prev.map(order => (order.id === orderId ? updatedOrder : order))
-      );
+      await firebaseService.updateOrderStatus(orderId, newStatus);
     } catch (err) {
       setError('Failed to update order status. Please try again.');
     }
@@ -241,12 +154,10 @@ const AdminDashboard = () => {
     switch (status) {
       case 'pending':
         return 'warning';
-      case 'preparing':
+      case 'processing':
         return 'info';
-      case 'ready':
+      case 'completed':
         return 'success';
-      case 'delivered':
-        return 'primary';
       case 'cancelled':
         return 'error';
       default:
@@ -254,176 +165,157 @@ const AdminDashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || foodsLoading || ordersLoading) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh',
-        }}
-      >
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="lg">
-        <Alert severity="error" sx={{ mt: 4 }}>
-          {error}
-        </Alert>
       </Container>
     );
   }
 
-  if (!user || user.role !== 'admin') {
+  if (error || foodsError || ordersError) {
     return (
-      <Container maxWidth="lg">
-        <Box
-          sx={{
-            mt: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h5" gutterBottom>
-            Access Denied
-          </Typography>
-        </Box>
+      <Container>
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error || foodsError || ordersError}
+        </Alert>
       </Container>
     );
   }
 
   return (
     <Container maxWidth="lg">
-      <Typography variant="h4" component="h1" gutterBottom sx={{ mt: 4 }}>
-        Admin Dashboard
-      </Typography>
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+          <IconButton onClick={() => navigate('/')} sx={{ mr: 2 }}>
+            <ArrowBackIcon />
+          </IconButton>
+          <Typography variant="h4" component="h1">
+            Admin Dashboard
+          </Typography>
+        </Box>
 
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-        <Tab label="Orders" />
-        <Tab label="Menu Items" />
-      </Tabs>
+        <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
+          <Tab label="Orders" />
+          <Tab label="Menu Items" />
+          <Tab label="Users" />
+        </Tabs>
 
-      {activeTab === 0 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Order ID</TableCell>
-                <TableCell>Customer</TableCell>
-                <TableCell>Total</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>#{order.id.slice(-6)}</TableCell>
-                  <TableCell>{order.deliveryDetails.name}</TableCell>
-                  <TableCell>${order.total.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                      color={getStatusColor(order.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleUpdateOrderStatus(order.id, 'preparing')}
-                      disabled={order.status !== 'pending'}
-                    >
-                      <CheckIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                      disabled={order.status === 'delivered' || order.status === 'cancelled'}
-                    >
-                      <CloseIcon />
-                    </IconButton>
-                  </TableCell>
+        {activeTab === 0 && (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Order ID</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Items</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {activeTab === 1 && (
-        <>
-          <Box sx={{ mb: 2 }}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-            >
-              Add Menu Item
-            </Button>
-          </Box>
-
-          <Grid container spacing={3}>
-            {menuItems.map((item) => (
-              <Grid item xs={12} sm={6} md={4} key={item.id}>
-                <Card>
-                  <CardContent>
-                    <Box
-                      component="img"
-                      src={item.image}
-                      alt={item.name}
-                      sx={{
-                        width: '100%',
-                        height: 200,
-                        objectFit: 'cover',
-                        borderRadius: 1,
-                        mb: 2,
-                      }}
-                    />
-                    <Typography variant="h6" gutterBottom>
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                      {item.description}
-                    </Typography>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      ${item.price.toFixed(2)}
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <IconButton
+              </TableHead>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>{order.id}</TableCell>
+                    <TableCell>{new Date(order.createdAt).toLocaleString()}</TableCell>
+                    <TableCell>{order.userId}</TableCell>
+                    <TableCell>
+                      {order.items.map((item) => (
+                        <div key={`${order.id}-${item.foodId}`}>
+                          {item.quantity}x {item.name}
+                          {item.addons && item.addons.length > 0 && (
+                            <div style={{ fontSize: '0.8em', color: '#666' }}>
+                              Addons: {item.addons.map(addon => addon.name).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </TableCell>
+                    <TableCell>${(order.total || 0).toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={order.status}
+                        color={getStatusColor(order.status)}
                         size="small"
-                        onClick={() => handleOpenDialog(item)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        onClick={() => handleUpdateOrderStatus(order.id!, 'processing')}
+                        disabled={order.status !== 'pending'}
+                        sx={{ mr: 1 }}
                       >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
+                        Start Processing
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => handleUpdateOrderStatus(order.id!, 'completed')}
+                        disabled={order.status !== 'processing'}
+                        sx={{ mr: 1 }}
+                      >
+                        Mark Complete
+                      </Button>
+                      <Button
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteItem(item.id)}
+                        onClick={() => handleUpdateOrderStatus(order.id!, 'cancelled')}
+                        disabled={order.status === 'completed' || order.status === 'cancelled'}
                       >
+                        Cancel
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {activeTab === 1 && (
+          <>
+            <Box sx={{ mb: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenDialog()}
+              >
+                Add Menu Item
+              </Button>
+            </Box>
+            <Grid container spacing={3}>
+              {foods.map((item) => (
+                <Grid item xs={12} sm={6} md={4} key={item.id}>
+                  <Card>
+                    <CardContent>
+                      <Typography variant="h6">{item.name}</Typography>
+                      <Typography color="textSecondary">{item.description}</Typography>
+                      <Typography variant="h6">${(item.price || 0).toFixed(2)}</Typography>
+                    </CardContent>
+                    <Box sx={{ p: 2 }}>
+                      <IconButton onClick={() => handleOpenDialog(item)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteItem(item.id!)}>
                         <DeleteIcon />
                       </IconButton>
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </>
-      )}
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </>
+        )}
 
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>
-          {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
+        {activeTab === 2 && <UserManagement />}
+
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogTitle>
+            {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
+          </DialogTitle>
+          <DialogContent>
             <TextField
               fullWidth
               label="Name"
@@ -431,7 +323,6 @@ const AdminDashboard = () => {
               value={formData.name}
               onChange={handleFormChange}
               margin="normal"
-              required
             />
             <TextField
               fullWidth
@@ -440,8 +331,6 @@ const AdminDashboard = () => {
               value={formData.description}
               onChange={handleFormChange}
               margin="normal"
-              multiline
-              rows={3}
             />
             <TextField
               fullWidth
@@ -451,7 +340,6 @@ const AdminDashboard = () => {
               value={formData.price}
               onChange={handleFormChange}
               margin="normal"
-              required
             />
             <TextField
               fullWidth
@@ -460,26 +348,24 @@ const AdminDashboard = () => {
               value={formData.category}
               onChange={handleFormChange}
               margin="normal"
-              required
             />
             <TextField
               fullWidth
-              label="Image URL"
-              name="image"
-              value={formData.image}
+              label="Image Path"
+              name="imagePath"
+              value={formData.imagePath}
               onChange={handleFormChange}
               margin="normal"
-              required
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
-            {editingItem ? 'Save Changes' : 'Add Item'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleSubmit} variant="contained">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
     </Container>
   );
 };

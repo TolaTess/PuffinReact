@@ -173,13 +173,28 @@ class FirebaseService {
   }
 
   // User Methods
+  async getUserProfile(userId: string) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        return userDoc.data() as User;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      throw new Error(`Failed to get user profile: ${error}`);
+    }
+  }
+
   async updateUserProfile(userId: string, data: Partial<User>) {
     try {
-      await updateDoc(doc(db, 'users', userId), {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
         ...data,
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
+      console.error('Error updating user profile:', error);
       throw new Error(`Failed to update user profile: ${error}`);
     }
   }
@@ -200,6 +215,85 @@ class FirebaseService {
       return 0; // No delivery available
     } catch (error) {
       throw new Error(`Failed to get delivery fee: ${error}`);
+    }
+  }
+
+  async updateUserRole(userId: string, isAdmin: boolean) {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        isAdmin,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw new Error(`Failed to update user role: ${error}`);
+    }
+  }
+
+  // Get all orders (for admin)
+  async getAllOrders() {
+    try {
+      const ordersRef = collection(db, 'orders');
+      const q = query(ordersRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Order));
+    } catch (error) {
+      console.error('Error getting all orders:', error);
+      throw new Error(`Failed to get orders: ${error}`);
+    }
+  }
+
+  // Get user's orders
+  async getUserOrders(userId: string) {
+    try {
+      const ordersRef = collection(db, 'orders');
+      const q = query(
+        ordersRef,
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Order));
+    } catch (error) {
+      console.error('Error getting user orders:', error);
+      throw new Error(`Failed to get user orders: ${error}`);
+    }
+  }
+
+  // Update order status
+  async updateOrderStatus(orderId: string, status: Order['status']) {
+    try {
+      const orderRef = doc(db, 'orders', orderId);
+      await updateDoc(orderRef, {
+        status,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      throw new Error(`Failed to update order status: ${error}`);
+    }
+  }
+
+  // Get all users (for admin)
+  async getAllUsers() {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as User));
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      throw new Error(`Failed to get users: ${error}`);
     }
   }
 }

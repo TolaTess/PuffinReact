@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
@@ -9,12 +9,17 @@ import {
   Link,
   Alert,
   Paper,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { loginStart, loginSuccess, loginFailure } from '../store/slices/authSlice';
 import { signInWithEmail, signInWithGoogle } from '../config/firebase';
+import { firebaseService } from '../services/firebase';
 import GoogleIcon from '@mui/icons-material/Google';
+
+const STORAGE_KEY = 'rememberedEmail';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,6 +29,16 @@ const Login = () => {
     email: '',
     password: '',
   });
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem(STORAGE_KEY);
+    if (rememberedEmail) {
+      setFormData(prev => ({ ...prev, email: rememberedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -32,14 +47,32 @@ const Login = () => {
     });
   };
 
+  const handleRememberMeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRememberMe(e.target.checked);
+    if (!e.target.checked) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     dispatch(loginStart());
 
     try {
-      const user = await signInWithEmail(formData.email, formData.password);
-      dispatch(loginSuccess(user));
-      navigate('/');
+      const firebaseUser = await signInWithEmail(formData.email, formData.password);
+      const userData = await firebaseService.getUserProfile(firebaseUser.uid);
+      
+      if (userData) {
+        dispatch(loginSuccess({
+          id: firebaseUser.uid,
+          email: firebaseUser.email!,
+          isAdmin: userData.isAdmin,
+          isMarketing: userData.isMarketing,
+        }));
+        navigate('/');
+      } else {
+        throw new Error('User data not found');
+      }
     } catch (err) {
       dispatch(loginFailure(err instanceof Error ? err.message : 'Login failed'));
     }
@@ -48,9 +81,20 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     dispatch(loginStart());
     try {
-      const user = await signInWithGoogle();
-      dispatch(loginSuccess(user));
-      navigate('/');
+      const firebaseUser = await signInWithGoogle();
+      const userData = await firebaseService.getUserProfile(firebaseUser.uid);
+      
+      if (userData) {
+        dispatch(loginSuccess({
+          id: firebaseUser.uid,
+          email: firebaseUser.email!,
+          isAdmin: userData.isAdmin,
+          isMarketing: userData.isMarketing,
+        }));
+        navigate('/');
+      } else {
+        throw new Error('User data not found');
+      }
     } catch (err) {
       dispatch(loginFailure(err instanceof Error ? err.message : 'Login failed'));
     }
@@ -108,6 +152,17 @@ const Login = () => {
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={rememberMe}
+                  onChange={handleRememberMeChange}
+                  color="primary"
+                />
+              }
+              label="Remember me"
+              sx={{ mt: 1 }}
             />
             <Button
               type="submit"

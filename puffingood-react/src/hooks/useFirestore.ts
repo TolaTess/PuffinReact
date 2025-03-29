@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { firebaseService } from '../services/firebase';
 import { Food, Order, AdminSettings } from '../types';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 export const useFoods = () => {
   const [foods, setFoods] = useState<Food[]>([]);
@@ -22,22 +24,31 @@ export const useFoods = () => {
   return { foods, loading, error };
 };
 
-export const useUserOrders = () => {
+export const useUserOrders = (isAdmin: boolean = false) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    setLoading(true);
-    const unsubscribe = firebaseService.subscribeToUserOrders(
-      (orders) => {
-        setOrders(orders);
+    const fetchOrders = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+        const ordersData = isAdmin
+          ? await firebaseService.getAllOrders()
+          : await firebaseService.getUserOrders(user.id);
+        setOrders(ordersData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
-  }, []);
+    fetchOrders();
+  }, [user, isAdmin]);
 
   return { orders, loading, error };
 };

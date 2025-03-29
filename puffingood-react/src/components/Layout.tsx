@@ -105,7 +105,7 @@ const Layout = () => {
               </ListItemIcon>
               <ListItemText primary="Orders" />
             </ListItem>
-            {user.role === 'admin' && (
+            {user.isAdmin && (
               <ListItem button component={RouterLink} to="/admin/dashboard">
                 <ListItemIcon>
                   <Dashboard />
@@ -213,10 +213,13 @@ const Layout = () => {
                     open={Boolean(anchorElUser)}
                     onClose={handleCloseUserMenu}
                   >
+                    <MenuItem component={RouterLink} to="/profile" onClick={handleCloseUserMenu}>
+                      <Typography textAlign="center">Profile</Typography>
+                    </MenuItem>
                     <MenuItem component={RouterLink} to="/orders" onClick={handleCloseUserMenu}>
                       <Typography textAlign="center">Orders</Typography>
                     </MenuItem>
-                    {user.role === 'admin' && (
+                    {user.isAdmin && (
                       <MenuItem component={RouterLink} to="/admin/dashboard" onClick={handleCloseUserMenu}>
                         <Typography textAlign="center">Admin Dashboard</Typography>
                       </MenuItem>
