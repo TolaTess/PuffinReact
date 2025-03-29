@@ -24,6 +24,7 @@ import {
   Box,
   Tabs,
   Tab,
+  InputAdornment,
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import { firebaseService } from '../services/firebase';
@@ -256,14 +257,30 @@ const UserManagement = () => {
                 label="Enable Discount Code"
               />
               {formData.isDiscount && (
-                <TextField
-                  fullWidth
-                  label="Discount Code"
-                  name="discountCode"
-                  value={formData.discountCode}
-                  onChange={handleSettingsChange}
-                  margin="normal"
-                />
+                <>
+                  <TextField
+                    fullWidth
+                    label="Discount Code"
+                    name="discountCode"
+                    value={formData.discountCode}
+                    onChange={handleSettingsChange}
+                    margin="normal"
+                  />
+                  <TextField
+                    fullWidth
+                    label="Discount Percentage"
+                    name="discountPercentage"
+                    type="number"
+                    InputProps={{
+                      endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                      inputProps: { min: 0, max: 100 }
+                    }}
+                    value={formData.discountPercentage || 0}
+                    onChange={handleSettingsChange}
+                    margin="normal"
+                    helperText="Enter a value between 0 and 100"
+                  />
+                </>
               )}
             </Grid>
           </Grid>

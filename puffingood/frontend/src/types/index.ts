@@ -29,6 +29,10 @@ export interface Order {
   items: OrderItem[];
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   totalAmount: number;
+  subtotal: number;
+  discount?: number;
+  discountCode?: string | null;
+  discountPercentage?: number | null;
   createdAt: Timestamp | Date;
   trackingNumber?: string;
   city: string;
@@ -49,6 +53,7 @@ export interface AdminSettings {
   isOutsideGalway: boolean;
   isDiscount: boolean;
   discountCode: string;
+  discountPercentage: number;
   galwayFee: number;
   outsideGalwayFee: number;
   galwayDeliveryTime: number;

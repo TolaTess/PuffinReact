@@ -382,8 +382,7 @@ const AdminDashboard = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Order ID</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Customer</TableCell>
+                    <TableCell>Date</TableCell>             
                     <TableCell>Items</TableCell>
                     <TableCell>Total</TableCell>
                     <TableCell>Status</TableCell>
@@ -400,7 +399,7 @@ const AdminDashboard = () => {
                           ? order.createdAt.toDate().toLocaleString()
                           : new Date(order.createdAt).toLocaleString()}
                       </TableCell>
-                      <TableCell>{order.userId}</TableCell>
+                     
                       <TableCell>
                         {order.items.map((item, index) => (
                           <div key={`${order.id}-${item.foodId || index}`}>
@@ -408,7 +407,6 @@ const AdminDashboard = () => {
                             {item.addons && item.addons.length > 0 && (
                               <div style={{ fontSize: '0.8em', color: '#666' }}>
                                 Addons: {item.addons
-                                  .filter(addon => addon.isAvailable && addon.price > 0)
                                   .map(addon => addon.name)
                                   .join(', ')}
                               </div>

@@ -13,8 +13,9 @@ import {
   CardActions,
   CircularProgress,
   Alert,
+  Paper,
 } from '@mui/material';
-import { useFoods } from '../hooks/useFirestore';
+import { useFoods, useAdminSettings } from '../hooks/useFirestore';
 import { Food } from '../types';
 
 // Import images
@@ -26,11 +27,12 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { foods, loading, error } = useFoods();
+  const { settings, loading: settingsLoading } = useAdminSettings();
 
   // Get featured items (first 3 items from the menu)
   const featuredItems = foods.slice(0, 3);
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <CircularProgress />
@@ -50,6 +52,35 @@ const Home = () => {
 
   return (
     <Box>
+      {/* Discount Banner */}
+      {settings?.isDiscount && (
+        <Paper
+          elevation={0}
+          sx={{
+            bgcolor: 'secondary.main',
+            color: 'white',
+            py: 1,
+            textAlign: 'center',
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+            🎉 Save {settings.discountPercentage}% with code:{' '}
+            <span style={{ 
+              backgroundColor: 'orange', 
+              color: 'secondary.main', 
+              padding: '2px 8px', 
+              borderRadius: 4,
+              fontFamily: 'monospace',
+              letterSpacing: '1px'
+            }}>
+              {settings.discountCode}
+            </span>
+          </Typography>
+        </Paper>
+      )}
+
       {/* Hero Section */}
       <Box
         sx={{

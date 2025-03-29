@@ -19,6 +19,7 @@ import { removeItem, updateQuantity, clearCart } from '../store/slices/cartSlice
 import { useState, useEffect } from 'react';
 import { firebaseService } from '../services/firebase';
 import { User } from '../types';
+import { useAdminSettings } from '../hooks/useFirestore';
 
 // Import images
 import classicImg from '../assets/puff/classic.png';
@@ -33,6 +34,7 @@ const Cart = () => {
   const [user, setUser] = useState<User | null>(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const { settings } = useAdminSettings();
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -97,6 +99,21 @@ const Cart = () => {
       navigate('/checkout');
     }
   };
+
+  // Calculate discount amount
+  const calculateDiscount = (subtotal: number) => {
+    if (settings?.isDiscount && settings.discountPercentage) {
+      return (subtotal * settings.discountPercentage) / 100;
+    }
+    return 0;
+  };
+
+  // Calculate final total
+  const subtotal = items.reduce((sum, item) => 
+    sum + (item.price + (item.addons?.reduce((addonSum, addon) => 
+      sum + (addon.isAvailable && addon.price > 0 ? addon.price : 0), 0) || 0)) * item.quantity, 0);
+  const discount = calculateDiscount(subtotal);
+  const finalTotal = subtotal + deliveryFee - discount;
 
   if (items.length === 0) {
     return (
@@ -220,9 +237,18 @@ const Cart = () => {
               <Box sx={{ my: 2 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>Subtotal</Typography>
-                  <Typography>€{(items.reduce((sum, item) => 
-                    sum + (item.price + (item.addons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0)) * item.quantity, 0)).toFixed(2)}</Typography>
+                  <Typography>€{subtotal.toFixed(2)}</Typography>
                 </Box>
+                {settings?.isDiscount && (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography color="success.main">
+                      Discount ({settings.discountPercentage}% off)
+                    </Typography>
+                    <Typography color="success.main">
+                      -€{discount.toFixed(2)}
+                    </Typography>
+                  </Box>
+                )}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography>Delivery Fee</Typography>
                   <Typography>€{deliveryFee.toFixed(2)}</Typography>
@@ -231,8 +257,7 @@ const Cart = () => {
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                   <Typography variant="h6">Total</Typography>
                   <Typography variant="h6">
-                    €{(items.reduce((sum, item) => 
-                      sum + (item.price + (item.addons?.reduce((addonSum, addon) => addonSum + addon.price, 0) || 0)) * item.quantity, 0) + deliveryFee).toFixed(2)}
+                    €{finalTotal.toFixed(2)}
                   </Typography>
                 </Box>
                 <Button
