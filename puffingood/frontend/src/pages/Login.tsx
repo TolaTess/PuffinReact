@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
@@ -28,11 +28,16 @@ import GoogleIcon from '@mui/icons-material/Google';
 
 const STORAGE_KEY = 'rememberedEmail';
 
-const Login = () => {
+interface FormData {
+  email: string;
+  password: string;
+}
+
+const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state: RootState) => state.auth);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
   });
@@ -66,7 +71,7 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     dispatch(loginStart());
 
@@ -78,8 +83,16 @@ const Login = () => {
         dispatch(loginSuccess({
           id: firebaseUser.uid,
           email: firebaseUser.email!,
+          name: userData.name || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          city: userData.city || '',
+          state: userData.state || '',
+          zipCode: userData.zipCode || '',
           isAdmin: userData.isAdmin,
           isMarketing: userData.isMarketing,
+          createdAt: userData.createdAt || new Date(),
+          updatedAt: userData.updatedAt || new Date(),
         }));
         navigate('/');
       } else {
@@ -100,8 +113,16 @@ const Login = () => {
         dispatch(loginSuccess({
           id: firebaseUser.uid,
           email: firebaseUser.email!,
+          name: userData.name || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          city: userData.city || '',
+          state: userData.state || '',
+          zipCode: userData.zipCode || '',
           isAdmin: userData.isAdmin,
           isMarketing: userData.isMarketing,
+          createdAt: userData.createdAt || new Date(),
+          updatedAt: userData.updatedAt || new Date(),
         }));
         navigate('/');
       } else {
@@ -190,7 +211,7 @@ const Login = () => {
                     <IconButton
                       aria-label="toggle password visibility"
                       onClick={() => setShowPassword(!showPassword)}
-                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) => e.preventDefault()}
                       edge="end"
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -267,7 +288,7 @@ const Login = () => {
                 type="email"
                 fullWidth
                 value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setResetEmail(e.target.value)}
                 error={!!resetError}
                 helperText={resetError}
               />

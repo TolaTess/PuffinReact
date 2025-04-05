@@ -195,7 +195,7 @@ const UserManagement = () => {
                   />
                   <TextField
                     fullWidth
-                    label="Galway Delivery Time (minutes)"
+                    label="Galway Delivery Time (hours)"
                     name="galwayDeliveryTime"
                     type="number"
                     value={formData.galwayDeliveryTime}
@@ -229,7 +229,7 @@ const UserManagement = () => {
                   />
                   <TextField
                     fullWidth
-                    label="Outside Galway Delivery Time (minutes)"
+                    label="Outside Galway Delivery Time (hours)"
                     name="outsideGalwayDeliveryTime"
                     type="number"
                     value={formData.outsideGalwayDeliveryTime}
